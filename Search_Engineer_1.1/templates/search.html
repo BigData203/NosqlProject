@@ -1,0 +1,145 @@
+<!doctype html>
+<html ng-app="app">
+
+<head>
+    <meta charset="UTF-8">
+    <title>快搜</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css">
+    <style>
+        a {
+            color: black;
+            text-decoration: none;
+        }
+        
+        .c {
+            text-indent: 2em;
+            /* border: 1px solid gray; */
+            padding: 5px;
+        }
+        
+        .all {
+            width: 100%;
+            height: 100%;
+            {#border: 1px #568bb9 solid;#}
+            border-radius: 5px;
+            background-color: white;
+        }
+        
+        .pc {
+            width: 100%;
+            height: 8%;
+        }
+        
+        .search {
+            width: 50%;
+            height: 90%;
+            margin: 100px;
+        }
+        
+        .div_search {
+            width: 650px;
+            height: 38px;
+            margin: 0 auto;
+            margin-top: 10px;
+        }
+        
+        .input_search {
+            width: 500px;
+            height: 38px;
+            float: left;
+        }
+        
+        .button_ok {
+            width: 100px;
+            height: 38px;
+            color: #fff;
+            font-size: 15px;
+            letter-spacing: 1px;
+            background: #3385ff;
+            border: 0;
+            outline: medium;
+            float: left;
+        }
+        
+        .title {
+            font-size: 20px;
+            padding-top: 5px;
+            padding-left: 5px;
+            text-decoration: underline black;
+        }
+        
+        .title a {
+            color: black;
+        }
+        
+        a:hover {
+            color: black;
+            text-decoration: none;
+            transform: scale(1.1);
+        }
+        
+        .all:hover {
+            transform: scale(1.01);
+        }
+
+        #right-box{
+            position: absolute;
+            top: 150px;
+            right: 250px;
+            padding: 90px
+        }
+    </style>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <div class="search">
+        <div class="div_search">
+            <form class="form-inline" method="post" action="/">
+                <input type="text" class="input_search" ng-model="query" value="{{ value }}" name="query" id="wd"  autocomplete="off" />
+                <input class="button_ok" role="button" type="submit" value="搜索" id="btn"  autocomplete="off">
+            </form>
+        </div>
+        <br>
+
+        <br>共有{{ length }}条结果 耗时{{t}}s
+        <br>
+        <br>
+        <div id="box">
+            {% for doc in docs %}
+            <div class="all">
+                <p class="title"><a href="{{ doc[0] }}" target="_blank">{{ doc[2]|safe }}</a></p>
+                <!-- <p class="link">{{ doc[0]|safe }}</p> -->
+                <div class="pc">
+                    <p class="c"><a href="{{ doc[0] }}" target="_blank">{{ doc[1]|safe }}</a></p>
+                    <!--
+                    <p>来源<a href="{{ doc[0] }}" target="_blank">{{ doc[0]|safe }}</a></p>
+                    <p>来源：{{ doc[0] }}</p>
+                    -->
+                </div>
+            </div>
+
+
+            <br> {% endfor %}
+        </div>
+        {{ pagination.links }}
+    </div>
+
+    <div id="right-box">
+        <ul class="list-group list-group-flush ">
+          <li style="font-weight:bold">快搜热搜</li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E8%A5%BF%E5%AE%89%E4%BA%A4%E9%80%9A%E5%A4%A7%E5%AD%A6/165226">1 西安交通大学</a></li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E6%B8%85%E5%8D%8E%E5%A4%A7%E5%AD%A6/111764?fromModule=lemma_search-box">2 清华大学</a></li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6?fromModule=lemma_search-box">3 北京大学</a></li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E5%A4%8D%E6%97%A6%E5%A4%A7%E5%AD%A6?fromModule=lemma_search-box">4 复旦大学</a></li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E4%B8%8A%E6%B5%B7%E4%BA%A4%E9%80%9A%E5%A4%A7%E5%AD%A6/131671?fromModule=lemma_search-box">5 上海交通大学</a></li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E5%8D%97%E4%BA%AC%E5%A4%A7%E5%AD%A6?fromModule=lemma_search-box">6 南京大学</a></li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E5%93%88%E5%B0%94%E6%BB%A8%E5%B7%A5%E4%B8%9A%E5%A4%A7%E5%AD%A6?fromModule=lemma_search-box">7 哈尔滨工业大学</a></li>
+          <li class="list-group-item "><a target="_blank" href="https://baike.baidu.com/item/%E4%B8%AD%E5%9B%BD%E7%A7%91%E5%AD%A6%E6%8A%80%E6%9C%AF%E5%A4%A7%E5%AD%A6/160519?fromModule=lemma_search-box&fromtitle=%E4%B8%AD%E5%9B%BD%E7%A7%91%E6%8A%80%E5%A4%A7%E5%AD%A6&fromid=20116490">8 中国科技大学</a></li>
+        </ul>
+    </div>
+
+</body>
+
+</html>
