@@ -470,7 +470,72 @@ Spider使用指南
                 self.outputer.output_txt()
     ```
 
+# 前后端整合
+前后端整合
+----
+初始化参数
 
+    def __init__(self, s):#初始化参数，
+        self.s = [s]
+
+返回字符串"搜索引擎
+
+    def fenci(self, v):#返回字符串"搜索引擎 包含 了 ..."
+        v = re.sub("[\：\·\—\，\。\“ \”]", "", v)#去标点符号
+        words = [word for word in jieba.cut_for_search(v)]
+        words = [i for i in words if i not in ('',' ','\n')]
+        string = ' '.join(words)
+        return string
+        
+求每个词的tfidf
+
+    def getTfIdfValues(self):#求每个词的tfidf
+        if self.s:
+            cut_s = list()
+            for v in self.s:
+                cut_s.append(self.fenci(v))
+            v = CountVectorizer()
+            t = TfidfTransformer()
+            tf_idf = t.fit_transform(v.fit_transform(cut_s))
+            word = v.get_feature_names()
+            weight = tf_idf.toarray()
+            tf_idfDict = {}#单词对应权值
+            for i in range(len(weight)):#文档
+                for j in range(len(word)):#文档中的单词
+                    getWord = word[j]
+                    getValue = weight[i][j]
+                    if getValue != 0:
+                        if tf_idfDict.__contains__(getWord):
+                            tf_idfDict[getWord] += float(getValue)
+                        else:
+                            tf_idfDict.update({getWord: getValue})
+            return tf_idfDict
+
+找到每个词的位置
+
+    def s_match(self, s, s1):#找到每个词的位置
+        loc = list()
+        l_s = len(s)
+        l_s1 = len(s1)
+        for i in range(l_s - l_s1 + 1):#蛮力法
+            index = i
+            for j in range(l_s1):
+                if s[index] == s1[j]:
+                    index += 1
+                else:
+                    break
+            if index - i == l_s1:
+                loc.append(i)
+        return loc
+拆分得到滑动窗口信息
+
+    def getShingle(self, loclist):# 拆分得到滑动窗口信息
+        txtLine = list()# 切片文本
+        for l in loclist:
+            txtLine.append(self.data[l:l + self.kv])#切片操作s[i:i+k]
+        # print('得到窗口信息', txtLine)
+        return txtLine
+        
 # 倒排索引算法
 建倒排索引
 ----
