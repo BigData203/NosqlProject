@@ -536,6 +536,24 @@ Spider使用指南
         # print('得到窗口信息', txtLine)
         return txtLine
         
+ 给生成的每段窗口打分
+ 
+    def getScore(self, tfidfV, txtline, keywords):# tfidf的值，生成的窗口信息,关键词列表
+        score = dict()
+        for i, v in enumerate(txtline):
+            if not score.get(i):
+                score[i] = 0  # 每一段初始化是0
+            for keyw in keywords:# 对于每个关键词
+                if keyw in v:
+                    if keyw in tfidfV:
+                        score[i] += v.count(keyw)*tfidfV[keyw]
+                        
+        a=[list(i) for i in score.items()]
+        sortedDic=top_k(a,min(len(a),10))
+        # print('窗口得分', sortedDic)
+        return sortedDic  
+
+
 # 倒排索引算法
 建倒排索引
 ----
