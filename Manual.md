@@ -260,7 +260,217 @@
                     print("craw fail")
 
             self.outputer.output_txt()  
+
+# 基于文档的搜索
+使用缓存进行检索
+----
+获取inverted,idf   
+
+        global all_sorted
+        global length
+        global li
+        
+计算每篇文档的tf-idf,找出候选doc，只考虑了正文的一般性，忽略了文章中标题，首段落的特殊作用
+
+        # TF−IDF=tf∗idf
+        tf_idf = {}
+        for term in term_list:#遍历分词列表
+            if term in inverted:#分词存在于倒排索引中
+                for doc_id, tf in inverted[term].items():#（取出doc_id文档号，tf次数）,不是词频，没有除文档总次数
+                    if doc_id in tf_idf:
+                        tf_idf[doc_id] += (1 + math.log(tf)) * idf[term]#（tf次数，具体词与具体文档的关系），当前文档与词的联系，（具体词idf[term]与全部文档的关系）词出现的逆文档频率
+                    else:
+                        tf_idf[doc_id] = (1 + math.log(tf)) * idf[term]
             
+        length=len(tf_idf)             
+
+全排序
+
+        all_sorted = sorted(tf_idf.items(), key=operator.itemgetter(1), reverse=True)
+        all_sorted=[list(i)  for i in all_sorted]
+
+得到文档ID
+
+    doc_id=[]
+    for i in sorted_doc:
+        doc_id.append(i[0])
+    
+获得文章 
+
+    texts=[]
+    for file in doc_id:
+        texts.append(open('./static/doc/'+file+".txt",encoding="utf-8").read())
+
+    doc_list = []
+    res=[]
+    index=0
+
+TOP_k使用指南
+----
+构建小顶堆跳转
+
+    ```python
+    def sift(li, low, higt):
+        tmp = li[low]
+        i = low
+        j = 2 * i + 1
+        while j <= higt:  # 情况2：i已经是最后一层
+            if j + 1 <= higt and li[j + 1][1] < li[j][1]:  # 右孩子存在并且小于左孩子
+                j += 1
+            if tmp[1] > li[j][1]:
+                li[i] = li[j]
+                i = j
+                j = 2 * i + 1
+            else:
+                break  # 情况1：j位置比tmp小
+        li[i] = tmp
+    ```
+
+堆排序
+
+    ```python
+    def top_k(li, k):
+        heap = li[0:k]
+        # 建堆
+        for i in range(k // 2 - 1, -1, -1):
+            sift(heap, i, k - 1)
+        for i in range(k, len(li)):
+            if li[i][1] > heap[0][1]:
+                heap[0] = li[i]
+                sift(heap, 0, k - 1)
+        # 挨个输出
+        for i in range(k - 1, -1, -1):
+            heap[0], heap[i] = heap[i], heap[0]
+            sift(heap, 0, i - 1)
+        return heap
+    ```
+
+
+
+Spider使用指南
+----
+
+构建网页链接的类，实现网页去重
+
+    ```python
+    class UrlManager(object):
+        def __init__(self):
+            self.new_urls = set()#待爬取url集合
+            self.old_urls = set()#以爬取url集合
+
+        def add_new_url(self, begin_url):
+            if begin_url is None:
+                return
+            if begin_url in self.new_urls or begin_url in self.old_urls:
+                return
+            self.new_urls.add(begin_url)
+
+        def has_new_url(self):
+            return len(self.new_urls) != 0
+
+        def get_new_url(self):#取出一个url
+            new_url = self.new_urls.pop()
+            self.old_urls.add(new_url)#添加至以爬取url集合中
+            return new_url
+
+        def add_new_urls(self, new_urls):
+            if new_urls is None or len(new_urls) == 0:
+                return
+            for url in new_urls:
+                self.add_new_url(url)
+    ```
+
+构建下载器
+
+    ```python
+    class HtmlDownloader(object):
+
+        def download(self, new_url):
+            #防止证书不受信任，但是忽略仍可继续访问，直接信任所有Https的安全证书
+            ssl._create_default_https_context = ssl._create_unverified_context
+            response = request.urlopen(new_url)
+            print("请求返回码：%d" % response.getcode())
+            if response.getcode() != 200:
+                return None
+            return response.read()
+    ```
+
+ 构建解析器
+
+ 解析网页
+
+    ```python
+        def parse(self, new_url, html_content):
+            if html_content is None or new_url is None:
+                return
+            soup = BeautifulSoup(html_content, 'html.parser')
+            new_urls = self._get_new_urls(new_url, soup)
+            new_data = self._get_new_data(new_url, soup)
+            return new_urls,new_data
+    ```
+
+获取次级链接
+
+    ```python
+        def _get_new_urls(self, new_url, soup):#按照广度优先搜索策略进行链接提取
+            full_urls = set()
+            links = soup.find_all("a", href=re.compile(r"/item/"))
+            for link in links:
+                url_href = link["href"]
+                full_url_href = parse.urljoin(new_url, url_href)#网页地址组合，把相对地址转换为绝对地址
+                full_urls.add(full_url_href)
+            return full_urls
+    ```
+
+提取网页信息
+
+    ```python
+        def _get_new_data(self, new_url, soup):#提取网页信息
+            res_data = {"url": new_url}
+            # 获取title class="lemmaWgt-lemmaTitle-title"
+            title = soup.find("dd", class_="lemmaWgt-lemmaTitle-title").find("h1").get_text()
+            res_data["title"] = title
+            # 获取摘要  class = "lemma-summary"
+            summary = soup.find("div", class_="lemma-summary").get_text()
+            res_data["summary"] = summary
+            #正文 
+            content = soup.find("div", class_="main-content").get_text()
+            text = re.sub(r'\n+','',content)  # 换行改成句号（标题段无句号的情况）
+            res_data["content"] = text
+            return res_data
+    ```
+
+将爬虫整合并添加抓取函数
+
+    ```python
+        class SpiderMain(object):
+            def __init__(self):
+                self.urls = UrlManager()
+                self.downloader = HtmlDownloader()
+                self.parser = HtmlParser()
+                self.outputer = Outputer()
+            def craw(self, begin_url):
+                count = 1
+                self.urls.add_new_urls(begin_url)
+                while self.urls.has_new_url():#判断当前url集合中还有url
+                    try:
+                        if count > all_nums:#爬取指定数量网页
+                            break
+                        new_url = self.urls.get_new_url()#取出一个url
+                        print("craw %d : %s" % (count, new_url))
+                        html_content = self.downloader.download(new_url)#进行爬取
+                        new_urls, new_data = self.parser.parse(new_url, html_content)#网页解析
+                        self.urls.add_new_urls(new_urls)
+                        self.outputer.collect_data(new_data)
+                        count += 1
+                    except BaseException as e:#对所有异常进行抛出
+                        print(e)
+                        print("craw fail")
+
+                self.outputer.output_txt()
+    ```
+
+
 # 倒排索引算法
 建倒排索引
 ----
