@@ -69,7 +69,7 @@
         for j in x:
             inverted[list(j.items())[1][1]]=list(j.items())[2][1]
 
-#倒排索引算法
+# 倒排索引算法
 建倒排索引
 ----
 读取文件
